@@ -1,0 +1,193 @@
+<html><head>
+    <title>抽签系统</title>
+    <style>
+        body { font-family: "微软雅黑", sans-serif; text-align: center; margin: 50px; }
+        .result-area {
+            background: #f0f0f0;
+            padding: 30px;
+            margin: 20px auto;
+            width: 500px;
+            height: 150px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #result { font-size: 24px; font-weight: bold; color: #2196F3; }
+        .btn {
+            padding: 10px 20px;
+            margin: 0 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+        }
+        #startBtn { background: #FF5722; color: white; }
+        #stopBtn { background: #2196F3; color: white; display: none; }
+        #historyBtn { background: #4CAF50; color: white; }
+        .history-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+        .history-content {
+            background: white;
+            margin: 100px auto;
+            padding: 20px;
+            width: 400px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="mainTitle">抽签系统</h1>
+
+    <!-- 已删除配置信息显示区域 -->
+
+    <div class="result-area">
+        <div id="result">请点击开始</div>
+    </div>
+    <button class="btn" id="startBtn" onclick="startRolling()">开始</button>
+    <button class="btn" id="stopBtn" onclick="stopRolling()">停止</button>
+    <button class="btn" id="historyBtn" onclick="showHistory()">历史结果</button>
+
+    <div class="history-modal" id="historyModal">
+        <div class="history-content">
+            <h3>历史记录</h3>
+            <div id="historyList">暂无记录</div>
+            <button class="btn" onclick="closeHistory()">关闭</button>
+        </div>
+    </div>
+
+    <script>
+        let rollingInterval;
+        const backendUrl = "http://localhost:5000";
+
+        window.onload = function() {
+            const requiredElements = [
+                "mainTitle", "result", "startBtn", "stopBtn",
+                "historyBtn", "historyModal", "historyList"
+            ];
+
+            requiredElements.forEach(id => {
+                const element = document.getElementById(id);
+                if (!element) {
+                    console.error(`关键元素不存在: #${id}`);
+                }
+            });
+
+            loadConfig();
+        };
+
+        function loadConfig() {
+            const mainTitle = document.getElementById("mainTitle");
+
+            if (!mainTitle) {
+                console.error("标题元素缺失");
+                return;
+            }
+
+            fetch(backendUrl + "/config")
+                .then(res => {
+                    if (!res.ok) throw new Error("状态码：" + res.status);
+                    return res.json();
+                })
+                .then(config => {
+                    mainTitle.textContent = config.title || "抽签系统";
+                    document.title = config.title || "抽签系统";
+                })
+                .catch(err => {
+                    console.error("加载配置失败：", err);
+                    mainTitle.textContent = "抽签系统（配置加载失败）";
+                    alert("后端服务未启动或连接失败，请先启动后端！");
+                });
+        }
+
+        function startRolling() {
+            const startBtn = document.getElementById("startBtn");
+            const stopBtn = document.getElementById("stopBtn");
+            const result = document.getElementById("result");
+
+            if (!startBtn || !stopBtn || !result) {
+                alert("页面元素加载不完整，请刷新页面重试");
+                return;
+            }
+
+            startBtn.disabled = true;
+            stopBtn.style.display = "inline-block";
+            startBtn.style.display = "none";
+            result.textContent = "滚动中...";
+
+            rollingInterval = setInterval(() => {
+                fetch(backendUrl + "/start")
+                    .then(res => res.json())
+                    .then(data => {
+                        result.textContent = data.result || "加载中...";
+                    })
+                    .catch(err => {
+                        clearInterval(rollingInterval);
+                        result.textContent = "滚动出错";
+                        startBtn.disabled = false;
+                        stopBtn.style.display = "none";
+                        startBtn.style.display = "inline-block";
+                    });
+            }, 100);
+        }
+
+        function stopRolling() {
+            clearInterval(rollingInterval);
+            const startBtn = document.getElementById("startBtn");
+            const stopBtn = document.getElementById("stopBtn");
+            const result = document.getElementById("result");
+
+            if (!startBtn || !stopBtn || !result) {
+                alert("页面元素加载不完整，请刷新页面重试");
+                return;
+            }
+
+            fetch(backendUrl + "/stop")
+                .then(res => res.json())
+                .then(data => {
+                    result.textContent = data.winners?.length
+                        ? data.winners.join("\n")
+                        : "未获取到结果";
+                    result.style.color = "#FF5722";
+                    startBtn.disabled = false;
+                    stopBtn.style.display = "none";
+                    startBtn.style.display = "inline-block";
+                })
+                .catch(err => {
+                    result.textContent = "停止出错";
+                });
+        }
+
+        function showHistory() {
+            const historyModal = document.getElementById("historyModal");
+            const historyList = document.getElementById("historyList");
+
+            if (!historyModal || !historyList) {
+                alert("历史记录元素缺失");
+                return;
+            }
+
+            fetch(backendUrl + "/history")
+                .then(res => res.json())
+                .then(data => {
+                    historyList.innerHTML = data.history?.length
+                        ? data.history.map((item, i) => `<div>第${i+1}次：${item}</div>`).join("")
+                        : "<div>暂无记录</div>";
+                    historyModal.style.display = "block";
+                });
+        }
+
+        function closeHistory() {
+            const historyModal = document.getElementById("historyModal");
+            if (historyModal) historyModal.style.display = "none";
+        }
+    </script>
+    </body></html>
