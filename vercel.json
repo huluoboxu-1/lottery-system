@@ -1,16 +1,16 @@
 {
     "version": 2,
-    "name": "lottery-system",  // 可自定义项目名称，建议与仓库名一致
+    "name": "lottery-system",
     "builds": [
         {
-            "src": "app.py",       // 后端入口文件（你的Flask主程序）
-            "use": "@vercel/python"  // 告诉Vercel用Python环境运行
+            "src": "app.py",
+            "use": "@vercel/python"
         }
     ],
     "routes": [
         {
-            "src": "/(.*)",        // 所有访问路径
-            "dest": "app.py"       // 都由app.py处理
+            "src": "/(.*)",
+            "dest": "app.py"
         }
     ]
 }
