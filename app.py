@@ -10,6 +10,11 @@ from pathlib import Path
 app = Flask(__name__)
 CORS(app)
 
+# 测试首页路由（用于验证是否能访问）
+@app.route('/')
+def test():
+    return "服务已启动！"  # 简单响应，排除复杂逻辑干扰
+
 # 获取项目根目录
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -124,4 +129,9 @@ def get_config():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    port = int(os.environ.get('PORT', 5000))  # 优先读取Vercel的PORT变量
+    app.run(
+        host='0.0.0.0',  # 必须是0.0.0.0，允许外部访问
+        port=port,
+        debug=False  # 生产环境禁用debug模式（会导致端口冲突）
+    )
