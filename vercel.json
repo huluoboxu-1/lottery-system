@@ -1,6 +1,8 @@
 {
     "version": 2,
     "name": "lottery-system",
+    "installCommand": "pip install -r requirements.txt",
+    "buildCommand": "echo 'Build complete'",
     "builds": [
         {
             "src": "app.py",
