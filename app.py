@@ -1,15 +1,18 @@
 from flask import Flask
-import os
 
+# 初始化应用（必须在所有路由前）
 app = Flask(__name__)
 
 
-# 仅保留根路由，无任何额外逻辑
+# 仅保留最基础的路由，无任何额外逻辑
 @app.route('/')
 def index():
-    return "服务正常，端口：" + os.environ.get('PORT', '5000')
+    return "Service running"
 
 
-# 关键：不使用if __name__ == '__main__'启动（Vercel会自动调用）
-# 直接暴露app变量给Vercel的Python运行时
-application = app  # Vercel的Python适配器会寻找application变量
+# 明确指定WSGI入口变量（与vercel.json中的wsgiEntrypoint对应）
+application = app
+
+# 移除本地启动代码（Vercel会自动调用WSGI入口）
+# if __name__ == '__main__':
+#     app.run()
